@@ -6,20 +6,26 @@ const BN = new Web3().utils.BN;
 const ERC20DetailedABI = require("./abi/ERC20Detailed.json");
 const ERC20Detailed = contract(ERC20DetailedABI);
 
-const setWeb3 = (web3Instance) => {
-  web3 = web3Instance;
+// const setWeb3 = (web3Instance) => {
+//   web3 = web3Instance;
+//   ERC20Detailed.setProvider(web3.currentProvider);
+// };
+const setCurrentProviderURL = (providerURL) => {
+  web3 = new Web3(new Web3.providers.HttpProvider(providerURL));
   ERC20Detailed.setProvider(web3.currentProvider);
 };
 
-const print = async (tx, customAddrToName, displayOverallBalChange) => {
+const print = async (txHash, customAddrToName, displayOverallBalChange) => {
+
+  const tx = await web3.eth.getTransactionReceipt(txHash);
   // make addresses lowercase
-  for(addr in customAddrToName) {
-    customAddrToName[addr.toLowerCase()] = customAddrToName[addr]
+  for (addr in customAddrToName) {
+    customAddrToName[addr.toLowerCase()] = customAddrToName[addr];
   }
   // append to our object
   var addressToName = {
-    [tx.receipt.from.toLowerCase()]: "SENDER",
-    [tx.receipt.to.toLowerCase()]: "RECEIVER",
+    [tx.from.toLowerCase()]: "SENDER",
+    [tx.to.toLowerCase()]: "RECEIVER",
     ...customAddrToName
   };
 
@@ -27,21 +33,21 @@ const print = async (tx, customAddrToName, displayOverallBalChange) => {
     return addressToName[addr.toLowerCase()] || addr;
   };
   const toDecimal = (amount, decimals) => {
-    decimals = parseInt(decimals)
+    decimals = parseInt(decimals);
     const divisor = new BN("10").pow(new BN(decimals));
     const beforeDec = new BN(amount).div(divisor).toString();
     var afterDec = new BN(amount).mod(divisor).toString();
 
-    if(afterDec.length < decimals && afterDec != "0") {
+    if (afterDec.length < decimals && afterDec != "0") {
       // pad with extra zeroes
-      pad = Array(decimals+1).join("0")
-      afterDec = (pad+afterDec).slice(-decimals);
+      pad = Array(decimals + 1).join("0");
+      afterDec = (pad + afterDec).slice(-decimals);
     }
 
-    return (beforeDec + "." + afterDec);  
+    return (beforeDec + "." + afterDec);
   };
 
-  const logs = tx.receipt.rawLogs;
+  const logs = tx.logs;
   const eventInterface = {
     anonymous: false,
     inputs: [
@@ -93,10 +99,10 @@ const print = async (tx, customAddrToName, displayOverallBalChange) => {
       token: tokenSymbol,
     });
 
-    if(displayOverallBalChange) {
+    if (displayOverallBalChange) {
       // cases to avoid undefined error
-      if(balances[fromName]) {
-        if(balances[fromName][tokenSymbol]) {
+      if (balances[fromName]) {
+        if (balances[fromName][tokenSymbol]) {
           balances[fromName][tokenSymbol] -= parseFloat(value);
         } else {
           balances[fromName][tokenSymbol] = -parseFloat(value);
@@ -104,11 +110,11 @@ const print = async (tx, customAddrToName, displayOverallBalChange) => {
       } else {
         balances[fromName] = {
           [tokenSymbol]: -parseFloat(value)
-        }
+        };
       }
 
-      if(balances[toName]) {
-        if(balances[toName][tokenSymbol]) {
+      if (balances[toName]) {
+        if (balances[toName][tokenSymbol]) {
           balances[toName][tokenSymbol] += parseFloat(value);
         } else {
           balances[toName][tokenSymbol] = parseFloat(value);
@@ -116,16 +122,16 @@ const print = async (tx, customAddrToName, displayOverallBalChange) => {
       } else {
         balances[toName] = {
           [tokenSymbol]: parseFloat(value)
-        }
+        };
       }
     }
   }
   console.table(transfers);
 
-  if(displayOverallBalChange) {
-    console.log("Balance Changes:")
-    console.table(balances)
+  if (displayOverallBalChange) {
+    console.log("Balance Changes:");
+    console.table(balances);
   }
 };
 
-module.exports = { setWeb3, print };
+module.exports = { setCurrentProviderURL, print };
