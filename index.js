@@ -10,8 +10,9 @@ const ERC20Detailed = contract(ERC20DetailedABI);
 //   web3 = web3Instance;
 //   ERC20Detailed.setProvider(web3.currentProvider);
 // };
-const setCurrentProviderURL = (providerURL) => {
-  web3 = new Web3(new Web3.providers.HttpProvider(providerURL));
+const setCurrentProvider = (provider) => {
+  // web3 = new Web3(new Web3.providers.HttpProvider(providerURL));
+  web3 = new Web3(provider);
   ERC20Detailed.setProvider(web3.currentProvider);
 };
 
@@ -134,4 +135,4 @@ const print = async (txHash, customAddrToName, displayOverallBalChange) => {
   }
 };
 
-module.exports = { setCurrentProviderURL, print };
+module.exports = { setCurrentProvider, print };
